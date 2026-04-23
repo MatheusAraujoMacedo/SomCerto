@@ -17,6 +17,7 @@ import { AudioProject } from "@/types/project";
 import { Equipment, EQUIPMENT_TYPE_LABELS } from "@/types/equipment";
 import { getActiveProject } from "@/lib/storage/projects-storage";
 import { analyzeCompatibility } from "@/lib/audio/risk-analysis";
+import { getFinalEquipmentImpedance, getImpedanceLabel } from "@/lib/audio/impedance";
 import { ConnectionMode, CompatibilityResult } from "@/types/audio";
 
 export default function CompatibilidadePage() {
@@ -152,7 +153,7 @@ export default function CompatibilidadePage() {
                 <div className="flex-1">
                   <p className="font-medium">{sp.name}</p>
                   <p className="text-xs text-gray-500">
-                    {EQUIPMENT_TYPE_LABELS[sp.type]} • {sp.impedance}Ω • {sp.rmsPower}W • x{sp.quantity}
+                    {EQUIPMENT_TYPE_LABELS[sp.type]} • {getImpedanceLabel(sp)}{sp.voiceCoilType === "dual" ? ` → ${getFinalEquipmentImpedance(sp)}Ω` : ""} • {sp.rmsPower}W • x{sp.quantity}
                   </p>
                 </div>
               </button>

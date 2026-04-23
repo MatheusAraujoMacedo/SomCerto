@@ -1,7 +1,7 @@
 import { AlertMessage, CompatibilityResult, CompatibilityStatus } from "@/types/audio";
 import { Equipment } from "@/types/equipment";
 import { AudioProject } from "@/types/project";
-import { calculateFinalImpedance } from "./impedance";
+import { calculateFinalImpedance, getFinalEquipmentImpedance } from "./impedance";
 
 /**
  * Analisa compatibilidade entre módulo e falantes.
@@ -30,8 +30,9 @@ export function analyzeCompatibility(
   }
 
   const speakerImpedances = speakers
-    .filter((s) => s.impedance !== undefined)
-    .flatMap((s) => Array(s.quantity).fill(s.impedance!));
+    .map((s) => getFinalEquipmentImpedance(s))
+    .filter((z): z is number => z !== null)
+    .flatMap((z, i) => Array(speakers[i]?.quantity ?? 1).fill(z));
 
   if (speakerImpedances.length === 0) {
     messages.push({
@@ -127,12 +128,13 @@ export function analyzeProject(project: AudioProject): AlertMessage[] {
   if (subwoofers.length > 0 && amplifiers.length > 0) {
     const sub = subwoofers[0];
     const amp = amplifiers[0];
-    if (sub.impedance && amp.minImpedance && sub.impedance < amp.minImpedance) {
+    const subFinalZ = getFinalEquipmentImpedance(sub);
+    if (subFinalZ && amp.minImpedance && subFinalZ < amp.minImpedance) {
       alerts.push({
         id: "sub-impedance-check",
         type: "warning",
         title: "Verifique a impedância",
-        description: "Verifique se a impedância final do sub está compatível com o módulo.",
+        description: `A impedância final do sub (${subFinalZ}Ω) está abaixo da mínima do módulo (${amp.minImpedance}Ω).`,
       });
     }
   }

@@ -24,9 +24,16 @@ import {
 import {
   Equipment,
   EquipmentType,
+  VoiceCoilType,
+  CoilConnection,
   EQUIPMENT_TYPE_LABELS,
 } from "@/types/equipment";
+import {
+  calculateDualVoiceCoilImpedance,
+  getImpedanceLabel,
+} from "@/lib/audio/impedance";
 import { v4 as uuidv4 } from "uuid";
+import { Info } from "lucide-react";
 
 const equipmentSchema = z.object({
   type: z.string().min(1, "Selecione o tipo"),
@@ -40,6 +47,10 @@ const equipmentSchema = z.object({
   minImpedance: z.number().min(0).optional(),
   maxPower: z.number().min(0).optional(),
   notes: z.string().optional(),
+  // Voice coil fields — validated manually in onSubmit
+  voiceCoilType: z.string().optional(),
+  impedancePerCoil: z.number().min(0).optional(),
+  coilConnection: z.string().optional(),
 });
 
 type FormData = z.infer<typeof equipmentSchema>;
@@ -79,13 +90,59 @@ export function EquipmentForm({
           minImpedance: editingEquipment.minImpedance,
           maxPower: editingEquipment.maxPower,
           notes: editingEquipment.notes,
+          voiceCoilType: editingEquipment.voiceCoilType ?? "single",
+          impedancePerCoil: editingEquipment.impedancePerCoil ?? editingEquipment.impedance,
+          coilConnection: editingEquipment.coilConnection ?? "parallel",
         }
-      : { quantity: 1 },
+      : { quantity: 1, voiceCoilType: "single", coilConnection: "parallel" },
   });
 
   const selectedType = watch("type");
+  const voiceCoilType = (watch("voiceCoilType") ?? "single") as VoiceCoilType;
+  const impedancePerCoil = watch("impedancePerCoil");
+  const coilConnection = (watch("coilConnection") ?? "parallel") as CoilConnection;
+
+  // Compute preview values
+  const isDualCoil = voiceCoilType === "dual";
+  const previewFinalImpedance =
+    isDualCoil && impedancePerCoil && impedancePerCoil > 0
+      ? calculateDualVoiceCoilImpedance(impedancePerCoil, coilConnection)
+      : impedancePerCoil ?? null;
+
+  const previewLabel =
+    impedancePerCoil && impedancePerCoil > 0
+      ? isDualCoil
+        ? `${impedancePerCoil}+${impedancePerCoil} ${impedancePerCoil === 1 ? "ohm" : "ohms"}`
+        : `${impedancePerCoil} ${impedancePerCoil === 1 ? "ohm" : "ohms"}`
+      : null;
 
   const onSubmit = (data: FormData) => {
+    const vcType = (data.voiceCoilType ?? "single") as VoiceCoilType;
+    const perCoil = data.impedancePerCoil;
+    const connection = (data.coilConnection ?? "parallel") as CoilConnection;
+    const isDual = vcType === "dual";
+
+    // Build impedance fields
+    let finalImpedance: number | undefined;
+    let impedanceLabel: string | undefined;
+    let impedanceLegacy: number | undefined;
+
+    if (perCoil && perCoil > 0) {
+      if (isDual) {
+        finalImpedance = calculateDualVoiceCoilImpedance(perCoil, connection);
+        impedanceLabel = `${perCoil}+${perCoil} ${perCoil === 1 ? "ohm" : "ohms"}`;
+        impedanceLegacy = perCoil; // keep legacy for backward compat
+      } else {
+        finalImpedance = perCoil;
+        impedanceLabel = `${perCoil} ${perCoil === 1 ? "ohm" : "ohms"}`;
+        impedanceLegacy = perCoil;
+      }
+    } else if (data.impedance && data.impedance > 0) {
+      // fallback for legacy / non-speaker types
+      finalImpedance = data.impedance;
+      impedanceLegacy = data.impedance;
+    }
+
     const equipment: Equipment = {
       id: editingEquipment?.id || uuidv4(),
       type: data.type as EquipmentType,
@@ -93,12 +150,17 @@ export function EquipmentForm({
       brand: data.brand,
       model: data.model,
       rmsPower: data.rmsPower || undefined,
-      impedance: data.impedance || undefined,
+      impedance: impedanceLegacy,
       quantity: data.quantity,
       channels: data.channels || undefined,
       minImpedance: data.minImpedance || undefined,
       maxPower: data.maxPower || undefined,
       notes: data.notes || undefined,
+      voiceCoilType: showSpeakerFields ? vcType : undefined,
+      impedancePerCoil: showSpeakerFields ? perCoil : undefined,
+      coilConnection: isDual ? connection : undefined,
+      finalImpedance,
+      impedanceLabel: showSpeakerFields ? impedanceLabel : undefined,
     };
 
     onSave(equipment);
@@ -118,7 +180,7 @@ export function EquipmentForm({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto border-white/[0.08] bg-[#111820] text-white sm:max-w-[500px]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto border-white/[0.08] bg-[#111820] text-white sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold">
             {editingEquipment ? "Editar Equipamento" : "Novo Equipamento"}
@@ -192,34 +254,124 @@ export function EquipmentForm({
             )}
           </div>
 
-          {/* Potência RMS e Impedância */}
-          <div className="grid grid-cols-2 gap-3">
-            {(showSpeakerFields || showAmpFields) && (
-              <div className="space-y-2">
-                <Label className="text-gray-300">Potência RMS (W)</Label>
-                <Input
-                  {...register("rmsPower", { valueAsNumber: true })}
-                  type="number"
-                  className="border-white/[0.08] bg-white/[0.03] text-gray-200"
-                  placeholder="Ex: 800"
-                />
-              </div>
-            )}
-            {showSpeakerFields && (
-              <div className="space-y-2">
-                <Label className="text-gray-300">Impedância (Ω)</Label>
-                <Input
-                  {...register("impedance", { valueAsNumber: true })}
-                  type="number"
-                  step="0.1"
-                  className="border-white/[0.08] bg-white/[0.03] text-gray-200"
-                  placeholder="Ex: 4"
-                />
-              </div>
-            )}
-          </div>
+          {/* Potência RMS */}
+          {(showSpeakerFields || showAmpFields) && (
+            <div className="space-y-2">
+              <Label className="text-gray-300">Potência RMS (W)</Label>
+              <Input
+                {...register("rmsPower", { valueAsNumber: true })}
+                type="number"
+                className="border-white/[0.08] bg-white/[0.03] text-gray-200"
+                placeholder="Ex: 800"
+              />
+            </div>
+          )}
 
-          {/* Quantidade */}
+          {/* ─── Impedância (falantes) ─── */}
+          {showSpeakerFields && (
+            <div className="space-y-4 rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
+              <div className="space-y-2">
+                <Label className="text-gray-300 text-sm font-semibold">Tipo de Bobina</Label>
+                <Select
+                  value={voiceCoilType}
+                  onValueChange={(val) => val && setValue("voiceCoilType", val)}
+                >
+                  <SelectTrigger className="border-white/[0.08] bg-white/[0.03] text-gray-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="border-white/[0.08] bg-[#151B24]">
+                    <SelectItem
+                      value="single"
+                      className="text-gray-200 focus:bg-cyan-500/10 focus:text-cyan-400"
+                    >
+                      Bobina simples
+                    </SelectItem>
+                    <SelectItem
+                      value="dual"
+                      className="text-gray-200 focus:bg-cyan-500/10 focus:text-cyan-400"
+                    >
+                      Bobina dupla
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Impedance per coil */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-gray-300 text-xs">
+                    {isDualCoil ? "Impedância por bobina (Ω)" : "Impedância (Ω)"}
+                  </Label>
+                  <Input
+                    {...register("impedancePerCoil", { valueAsNumber: true })}
+                    type="number"
+                    step="0.1"
+                    className="border-white/[0.08] bg-white/[0.03] text-gray-200"
+                    placeholder="Ex: 4"
+                  />
+                </div>
+
+                {/* Coil connection — only for dual */}
+                {isDualCoil && (
+                  <div className="space-y-2">
+                    <Label className="text-gray-300 text-xs">Ligação das bobinas</Label>
+                    <Select
+                      value={coilConnection}
+                      onValueChange={(val) => val && setValue("coilConnection", val)}
+                    >
+                      <SelectTrigger className="border-white/[0.08] bg-white/[0.03] text-gray-200">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="border-white/[0.08] bg-[#151B24]">
+                        <SelectItem
+                          value="parallel"
+                          className="text-gray-200 focus:bg-cyan-500/10"
+                        >
+                          Paralelo
+                        </SelectItem>
+                        <SelectItem
+                          value="series"
+                          className="text-gray-200 focus:bg-cyan-500/10"
+                        >
+                          Série
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+
+              {/* Preview */}
+              {previewLabel && previewFinalImpedance !== null && (
+                <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 space-y-1">
+                  <p className="text-xs font-semibold text-cyan-400">
+                    {isDualCoil ? `Bobina dupla ${previewLabel}` : `Bobina simples ${previewLabel}`}
+                  </p>
+                  {isDualCoil && (
+                    <p className="text-xs text-gray-400">
+                      Ligação em {coilConnection === "parallel" ? "paralelo" : "série"}
+                    </p>
+                  )}
+                  <p className="text-sm font-bold text-white">
+                    Impedância final: {previewFinalImpedance}Ω
+                  </p>
+                </div>
+              )}
+
+              {/* Help text */}
+              {isDualCoil && (
+                <div className="flex items-start gap-2">
+                  <Info className="h-3.5 w-3.5 text-gray-500 mt-0.5 shrink-0" />
+                  <p className="text-[11px] text-gray-500 leading-relaxed">
+                    Bobina dupla significa que o falante possui duas bobinas. A ligação em série
+                    aumenta a impedância final; a ligação em paralelo reduz.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Quantidade + Canais */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label className="text-gray-300">Quantidade</Label>

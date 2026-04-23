@@ -19,6 +19,7 @@ import {
 import { AudioProject } from "@/types/project";
 import { getActiveProject } from "@/lib/storage/projects-storage";
 import { analyzeProject } from "@/lib/audio/risk-analysis";
+import { getFinalEquipmentImpedance, getImpedanceLabel } from "@/lib/audio/impedance";
 import { AlertMessage } from "@/types/audio";
 
 const quickActions = [
@@ -73,8 +74,9 @@ export default function DashboardPage() {
     .filter((e) => e.type !== "amplifier")
     .reduce((acc, e) => acc + (e.rmsPower || 0) * e.quantity, 0);
 
-  const mainImpedance =
-    project.equipments.find((e) => e.type === "subwoofer")?.impedance || 0;
+  const mainSub = project.equipments.find((e) => e.type === "subwoofer");
+  const mainImpedance = mainSub ? getFinalEquipmentImpedance(mainSub) : null;
+  const mainImpedanceLabel = mainSub ? getImpedanceLabel(mainSub) : null;
 
   const vias = new Set(
     project.equipments
@@ -129,7 +131,7 @@ export default function DashboardPage() {
         <MetricCard
           title="Impedância Principal"
           value={mainImpedance ? `${mainImpedance}Ω` : "—"}
-          subtitle="Subwoofer"
+          subtitle={mainSub?.voiceCoilType === "dual" ? mainImpedanceLabel ?? "Subwoofer" : "Subwoofer"}
           icon={Volume2}
         />
         <MetricCard

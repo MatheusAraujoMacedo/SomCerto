@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Pencil, Trash2 } from "lucide-react";
 import { Equipment, EQUIPMENT_TYPE_LABELS } from "@/types/equipment";
+import { getImpedanceDisplay } from "@/lib/audio/impedance";
 
 const typeBadgeColors: Record<string, string> = {
   subwoofer: "bg-purple-500/20 text-purple-400 border-purple-500/30",
@@ -82,7 +83,7 @@ export function EquipmentTable({
                 {eq.rmsPower ? `${eq.rmsPower}W` : "—"}
               </TableCell>
               <TableCell className="text-gray-400 hidden md:table-cell">
-                {eq.impedance ? `${eq.impedance}Ω` : "—"}
+                {getImpedanceDisplay(eq)}
               </TableCell>
               <TableCell className="text-gray-400 hidden sm:table-cell">{eq.quantity}</TableCell>
               <TableCell className="text-right">

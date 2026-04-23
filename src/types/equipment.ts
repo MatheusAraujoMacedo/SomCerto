@@ -33,6 +33,9 @@ export const EQUIPMENT_TYPE_ICONS: Record<EquipmentType, string> = {
   enclosure: "box",
 };
 
+export type VoiceCoilType = "single" | "dual";
+export type CoilConnection = "series" | "parallel";
+
 export interface Equipment {
   id: string;
   type: EquipmentType;
@@ -40,10 +43,17 @@ export interface Equipment {
   brand: string;
   model: string;
   rmsPower?: number;
+  /** @deprecated Use voiceCoilType + impedancePerCoil instead. Kept for backward compatibility. */
   impedance?: number;
   quantity: number;
   channels?: number;
   minImpedance?: number;
   maxPower?: number;
   notes?: string;
+  // Voice coil fields
+  voiceCoilType?: VoiceCoilType;
+  impedancePerCoil?: number;
+  coilConnection?: CoilConnection;
+  finalImpedance?: number;
+  impedanceLabel?: string;
 }

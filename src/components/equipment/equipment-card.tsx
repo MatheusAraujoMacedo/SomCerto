@@ -11,6 +11,7 @@ import {
   Box,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getImpedanceDisplay } from "@/lib/audio/impedance";
 
 const typeIcons: Record<string, typeof Speaker> = {
   subwoofer: Speaker,
@@ -81,11 +82,14 @@ export function EquipmentCard({ equipment, className }: EquipmentCardProps) {
                 {equipment.rmsPower}W RMS
               </span>
             )}
-            {equipment.impedance && (
-              <span className="text-[10px] font-medium text-gray-500">
-                {equipment.impedance}Ω
-              </span>
-            )}
+            {(() => {
+              const display = getImpedanceDisplay(equipment);
+              return display !== "—" ? (
+                <span className="text-[10px] font-medium text-gray-500">
+                  {display}
+                </span>
+              ) : null;
+            })()}
             {equipment.quantity > 1 && (
               <span className="text-[10px] font-medium text-gray-500">
                 x{equipment.quantity}

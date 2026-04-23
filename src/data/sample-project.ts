@@ -12,8 +12,13 @@ export const sampleProject: AudioProject = {
       brand: "Bomber",
       model: "Bicho Papão 12\"",
       rmsPower: 800,
-      impedance: 4, // bobina dupla 4+4 (paralelo = 2Ω, série = 8Ω)
+      impedance: 4, // legacy — mantido para compatibilidade
       quantity: 1,
+      voiceCoilType: "dual",
+      impedancePerCoil: 4,
+      coilConnection: "parallel",
+      finalImpedance: 2,
+      impedanceLabel: "4+4 ohms",
       notes: "Bobina dupla 4+4 ohms. Ligação em paralelo resulta em 2 ohms.",
     },
     {
