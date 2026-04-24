@@ -15,6 +15,7 @@ import {
   Box,
   Mic,
   ArrowRight,
+  Wand2,
 } from "lucide-react";
 import { AudioProject } from "@/types/project";
 import { getActiveProject } from "@/lib/storage/projects-storage";
@@ -23,6 +24,14 @@ import { getFinalEquipmentImpedance, getImpedanceLabel } from "@/lib/audio/imped
 import { AlertMessage } from "@/types/audio";
 
 const quickActions = [
+  {
+    href: "/projeto-guiado",
+    label: "Criar Projeto Guiado",
+    description: "Monte o som do zero passo a passo",
+    icon: Wand2,
+    color: "from-fuchsia-500/20 to-fuchsia-600/5 border-fuchsia-500/20",
+    iconColor: "text-fuchsia-400",
+  },
   {
     href: "/compatibilidade",
     label: "Analisar Compatibilidade",

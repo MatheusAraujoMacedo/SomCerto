@@ -12,11 +12,13 @@ import {
   Mic,
   ChevronLeft,
   Volume2,
+  Wand2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/projeto-guiado", label: "Projeto Guiado", icon: Wand2 },
   { href: "/meu-projeto", label: "Meu Projeto", icon: Car },
   { href: "/equipamentos", label: "Equipamentos", icon: Speaker },
   { href: "/compatibilidade", label: "Compatibilidade", icon: GitCompare },
