@@ -185,7 +185,13 @@ export default function CompatibilidadePage() {
             <div className="grid gap-4 sm:grid-cols-3">
                 <StatusCard
                   title="Status Geral"
-                  status={autoAnalysis.status === "compatible" ? "ok" : autoAnalysis.status === "risk" ? "risk" : "attention"}
+                  status={
+                    autoAnalysis.status === "compatible"
+                      ? "ok"
+                      : autoAnalysis.status === "risk"
+                      ? "risk"
+                      : "attention"
+                  }
                   description={translateStatus(autoAnalysis.status)}
                 />
                 <MetricCard
@@ -470,9 +476,9 @@ export default function CompatibilidadePage() {
                     status={
                     resultAdvanced.status === "compatible"
                         ? "ok"
-                        : resultAdvanced.status === "attention"
-                        ? "attention"
-                        : "risk"
+                        : resultAdvanced.status === "risk"
+                        ? "risk"
+                        : "attention"
                     }
                     description={
                         resultAdvanced.messages.find(m => m.id === "global-risk")?.description ??
@@ -486,16 +492,16 @@ export default function CompatibilidadePage() {
                     {resultAdvanced.channelResults.map((cr, idx) => (
                         <div key={idx} className={`rounded-xl border p-5 ${
                             cr.status === "risk" ? "border-red-500/20 bg-red-500/5" :
-                            cr.status === "attention" ? "border-amber-500/20 bg-amber-500/5" :
+                            cr.status === "warning" || cr.status === "incomplete" ? "border-amber-500/20 bg-amber-500/5" :
                             "border-emerald-500/20 bg-emerald-500/5"
                         }`}>
                             <h3 className="font-semibold text-white mb-4 flex justify-between">
                                 {cr.channelLabel}
                                 <span className={`text-xs px-2 py-1 rounded-md uppercase tracking-wider ${
                                     cr.status === "risk" ? "bg-red-500/20 text-red-400" :
-                                    cr.status === "attention" ? "bg-amber-500/20 text-amber-400" :
+                                    cr.status === "warning" || cr.status === "incomplete" ? "bg-amber-500/20 text-amber-400" :
                                     "bg-emerald-500/20 text-emerald-400"
-                                }`}>{cr.status === "compatible" ? "OK" : cr.status}</span>
+                                }`}>{cr.status === "compatible" ? "OK" : translateStatus(cr.status)}</span>
                             </h3>
                             
                             <div className="grid grid-cols-2 gap-3 mb-4">
@@ -537,16 +543,18 @@ export default function CompatibilidadePage() {
                 status={
                 resultComplete.status === "compatible"
                     ? "ok"
-                    : resultComplete.status === "attention"
-                    ? "attention"
-                    : "risk"
+                    : resultComplete.status === "risk"
+                    ? "risk"
+                    : "attention"
                 }
                 description={
                 resultComplete.status === "compatible"
                     ? "Sistema compatível! Impedância e potência estão dentro dos parâmetros gerais."
-                    : resultComplete.status === "attention"
-                    ? "Existem pontos de atenção. Verifique os alertas abaixo."
-                    : "Riscos identificados no grupo principal. Não ligue o sistema sem verificar."
+                    : resultComplete.status === "risk"
+                    ? "Riscos identificados no grupo principal. Não ligue o sistema sem verificar."
+                    : resultComplete.status === "incomplete"
+                    ? "Dados incompletos para validar tudo. Complete os campos e revise os alertas."
+                    : "Existem pontos de atenção. Verifique os alertas abaixo."
                 }
             />
 

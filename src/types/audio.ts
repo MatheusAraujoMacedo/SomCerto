@@ -2,7 +2,11 @@ import { Equipment } from "./equipment";
 
 export type ConnectionMode = "series" | "parallel" | "individual";
 
-export type CompatibilityStatus = "compatible" | "attention" | "risk";
+export type CompatibilityStatus =
+  | "compatible"
+  | "warning"
+  | "risk"
+  | "incomplete";
 
 export interface CompatibilityResult {
   status: CompatibilityStatus;
@@ -86,7 +90,7 @@ export interface DbMeasurement {
   value: number;
 }
 
-export type ProjectCompatibilityStatus = "compatible" | "warning" | "risk" | "incomplete";
+export type ProjectCompatibilityStatus = CompatibilityStatus;
 
 export type CompatibilityAssociation = {
   amplifierId?: string;

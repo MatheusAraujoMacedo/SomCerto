@@ -31,7 +31,7 @@ export function analyzeCompatibility(
       description: "O módulo não possui potência máxima ou impedância mínima definidas.",
     });
     return {
-      status: "attention",
+      status: "warning",
       finalImpedance: 0,
       estimatedPower: 0,
       messages,
@@ -79,7 +79,7 @@ export function analyzeCompatibility(
   );
 
   if (totalSpeakerRms > 0 && amplifier.maxPower > totalSpeakerRms * 1.5) {
-    if (status !== "risk") status = "attention";
+    if (status !== "risk") status = "warning";
     messages.push({
       id: "amp-too-strong",
       type: "warning",
@@ -90,7 +90,7 @@ export function analyzeCompatibility(
 
   // Verificar módulo muito fraco
   if (totalSpeakerRms > 0 && amplifier.maxPower < totalSpeakerRms * 0.5) {
-    if (status !== "risk") status = "attention";
+    if (status !== "risk") status = "warning";
     messages.push({
       id: "amp-too-weak",
       type: "warning",
@@ -207,7 +207,7 @@ export function analyzeMultiChannelAmplifierCompatibility(
     }
 
     if (speakerRms > 0 && estimatedPower > speakerRms * 1.5) {
-      if (channelStatus !== "risk") channelStatus = "attention";
+      if (channelStatus !== "risk") channelStatus = "warning";
       channelMessages.push({
         id: `pwr-high-${channelLabel}`,
         type: "warning",
@@ -217,7 +217,7 @@ export function analyzeMultiChannelAmplifierCompatibility(
     }
 
     if (speakerRms > 0 && estimatedPower < speakerRms * 0.5) {
-      if (channelStatus !== "risk") channelStatus = "attention";
+      if (channelStatus !== "risk") channelStatus = "warning";
       channelMessages.push({
         id: `pwr-low-${channelLabel}`,
         type: "warning",
@@ -249,8 +249,8 @@ export function analyzeMultiChannelAmplifierCompatibility(
     // Update global status
     if (channelStatus === "risk") {
       globalStatus = "risk";
-    } else if (channelStatus === "attention" && globalStatus !== "risk") {
-      globalStatus = "attention";
+    } else if (channelStatus === "warning" && globalStatus !== "risk") {
+      globalStatus = "warning";
     }
   }
 
@@ -261,7 +261,7 @@ export function analyzeMultiChannelAmplifierCompatibility(
       title: "Nenhum falante alocado",
       description: "Associe falantes aos canais na interface abaixo.",
     });
-    globalStatus = "attention";
+    globalStatus = "warning";
   } else if (globalStatus === "compatible") {
     globalMessages.push({
       id: "all-ok",
