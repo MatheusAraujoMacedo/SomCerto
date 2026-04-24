@@ -85,3 +85,26 @@ export interface DbMeasurement {
   timestamp: number;
   value: number;
 }
+
+export type ProjectCompatibilityStatus = "compatible" | "warning" | "risk" | "incomplete";
+
+export type CompatibilityAssociation = {
+  amplifierId?: string;
+  amplifierName?: string;
+  speakerId?: string;
+  speakerName?: string;
+  channelLabel?: string;
+  finalImpedance?: number;
+  minAllowedImpedance?: number;
+  status: ProjectCompatibilityStatus;
+  messages: string[];
+};
+
+export type ProjectCompatibilityResult = {
+  status: ProjectCompatibilityStatus;
+  amplifierCount: number;
+  speakerCount: number;
+  associations: CompatibilityAssociation[];
+  alerts: AlertMessage[];
+  recommendations: AlertMessage[];
+};
