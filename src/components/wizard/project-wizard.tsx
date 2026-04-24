@@ -157,11 +157,15 @@ export function ProjectWizard() {
               Próximo <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
-            <div className="flex flex-col items-end gap-2">
+            <div className="flex flex-col items-end gap-3 w-full max-w-sm ml-auto">
+              {errorMessage && (
+                <div className="w-full rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                  {errorMessage}
+                </div>
+              )}
               <Button disabled={isSaving} onClick={handleSaveProject} className="bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/20">
                 <Check className="mr-2 h-4 w-4" /> {isSaving ? "Salvando..." : "Salvar Projeto"}
               </Button>
-              {errorMessage && <p className="text-xs text-red-400 max-w-xs">{errorMessage}</p>}
             </div>
           )}
         </div>
@@ -359,7 +363,7 @@ function Step3({ state, updateState }: { state: WizardState; updateState: (u: Pa
             </div>
 
             <div className="space-y-3 pt-4 border-t border-white/[0.06]">
-                <h3 className="font-semibold text-gray-300">Equipamentos selecionados ({state.equipments.length})</h3>
+                <h3 className="font-semibold text-gray-300">Equipamentos adicionados ({state.equipments.length})</h3>
                 {state.equipments.length === 0 && (
                     <div className="p-6 border border-white/[0.08] border-dashed rounded-xl text-center">
                         <p className="text-sm text-gray-400">Nenhum equipamento adicionado ainda.</p>
@@ -546,7 +550,7 @@ function Step7({ state }: { state: WizardState }) {
             </div>
 
             <div className="p-5 rounded-xl border border-white/[0.06] bg-white/[0.02] space-y-3">
-                <h3 className="text-xs text-gray-500 uppercase tracking-wider border-b border-white/[0.06] pb-2">Equipamentos selecionados</h3>
+                <h3 className="text-xs text-gray-500 uppercase tracking-wider border-b border-white/[0.06] pb-2">Equipamentos adicionados</h3>
                 {state.equipments.length === 0 ? (
                     <p className="text-sm text-gray-400">Nenhum equipamento adicionado ainda.</p>
                 ) : (
