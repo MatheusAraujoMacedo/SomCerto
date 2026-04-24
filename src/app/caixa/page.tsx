@@ -198,7 +198,7 @@ export default function CaixaPage() {
           Calculadora de Caixa
         </h1>
         <p className="mt-1 text-sm text-gray-500">
-          Calcule as dimensões e o volume lítrico para o projeto de som automotivo atual.
+          Calcule o volume interno da caixa acústica usando as medidas do projeto ativo.
         </p>
       </div>
 
@@ -226,7 +226,7 @@ export default function CaixaPage() {
                                     {sub.voiceCoilType === 'dual' ? (
                                         <>
                                           <span>Bobina Dupla: <strong className="text-gray-300">{sub.impedancePerCoil}+{sub.impedancePerCoil} ohms</strong></span>
-                                          <span>Associação: <strong className="text-gray-300">{sub.coilConnection === 'parallel' ? 'Paralelo' : 'Serie'} ({sub.finalImpedance || ((sub.coilConnection === 'parallel' && sub.impedancePerCoil) ? sub.impedancePerCoil/2 : sub.impedancePerCoil ? sub.impedancePerCoil*2 : '?')} ohms)</strong></span>
+                                          <span>Associação: <strong className="text-gray-300">{sub.coilConnection === 'parallel' ? 'Paralelo' : 'Série'} ({sub.finalImpedance || ((sub.coilConnection === 'parallel' && sub.impedancePerCoil) ? sub.impedancePerCoil/2 : sub.impedancePerCoil ? sub.impedancePerCoil*2 : '?')} ohms)</strong></span>
                                         </>
                                     ) : (
                                         <span>Impedância Simples: <strong className="text-gray-300">{sub.impedance || sub.impedancePerCoil || '?'} ohms</strong></span>
@@ -325,7 +325,7 @@ export default function CaixaPage() {
                     <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-2">
                         <Label className="text-gray-300 text-[11px] leading-tight flex items-end">
-                        Volume Oculp. Falante (L)
+                        Volume ocupado pelo falante (L)
                         </Label>
                         <Input
                         {...register("speakerVolumeLiters", { valueAsNumber: true })}
@@ -338,7 +338,7 @@ export default function CaixaPage() {
                         <>
                         <div className="space-y-2">
                             <Label className="text-gray-300 text-[11px] leading-tight flex items-end">
-                                Volume Oculp. Duto (L)
+                                Volume ocupado pelo duto (L)
                             </Label>
                             <Input
                             {...register("portVolumeLiters", { valueAsNumber: true })}
@@ -367,7 +367,7 @@ export default function CaixaPage() {
                     className="w-full bg-cyan-600 text-white hover:bg-cyan-700 shadow-lg shadow-cyan-600/20"
                     >
                     <Calculator className="mr-1.5 h-4 w-4" />
-                    Calcular Volume Base
+                    Calcular volume
                     </Button>
                 </form>
             </div>
@@ -375,7 +375,7 @@ export default function CaixaPage() {
 
         {/* Right Col: Results */}
         <div className="space-y-4">
-          <h2 className="text-sm font-semibold text-white">Resultado Final</h2>
+          <h2 className="text-sm font-semibold text-white">Resultado da caixa</h2>
 
           {calculated ? (
             <div className="space-y-4">
@@ -414,7 +414,7 @@ export default function CaixaPage() {
                  <Button onClick={handleSaveToProject} className="w-full bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20 text-white">
                     <Save className="mr-2 h-4 w-4" /> {saved ? "Atualizado no projeto!" : "Salvar caixa no projeto"}
                  </Button>
-                 {saved && <p className="text-xs text-emerald-400 text-center animate-pulse">Caixa salva no projeto do Active State com sucesso.</p>}
+                 {saved && <p className="text-xs text-emerald-400 text-center animate-pulse">Caixa salva no projeto com sucesso.</p>}
                </div>
               
                {/* Contextual Errors / Warning */}
@@ -422,21 +422,21 @@ export default function CaixaPage() {
                    <AlertCard
                     type="error"
                     title="Erro de Projeção"
-                    description="Verifique as medidas. O volume líquido calculado ficou inválido (menor ou igual a zero)."
+                    description="Verifique as medidas. O volume líquido calculado ficou inválido."
                   />
                )}
                {enclosureType === "ported" && (
                     <AlertCard
                     type="info"
                     title="Aviso de Ajuste (Duto)"
-                    description="Em caixas dutadas, o filtro 'subsonic' deve ser ajustado de acordo com a sintonia da caixa na aba Configuração."
+                    description="Em caixas dutadas, ajuste o subsonic de acordo com a sintonia do duto."
                   />
                )}
 
               <AlertCard
                 type="warning"
                 title="Cálculo aproximado"
-                description="Este cálculo é aproximado. Projetos profissionais devem considerar parâmetros Thiele-Small e sintonia do duto para determinar volume e frequência de afinação ideais."
+                description="Este cálculo é aproximado. Projetos profissionais devem considerar parâmetros Thiele-Small, deslocamento real dos componentes e sintonia do duto."
               />
             </div>
           ) : (
