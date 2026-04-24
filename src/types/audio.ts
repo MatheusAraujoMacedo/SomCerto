@@ -67,6 +67,20 @@ export interface CrossoverConfig {
   notes: string;
 }
 
+export type CrossoverSetting = {
+  id: string;
+  equipmentId: string;
+  equipmentType: "subwoofer" | "midrange" | "driver" | "tweeter";
+  via: string;
+  hpf?: number | null;
+  lpf?: number | null;
+  slope?: string;
+  gain?: number;
+  phase?: number;
+  delay?: number;
+  notes?: string;
+};
+
 export interface DbMeasurement {
   timestamp: number;
   value: number;

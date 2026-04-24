@@ -11,45 +11,42 @@ import {
   Cell,
 } from "recharts";
 
-const crossoverData = [
-  {
-    via: "Subwoofer",
-    start: 30,
-    end: 90,
-    color: "#a855f7",
-  },
-  {
-    via: "Médio",
-    start: 125,
-    end: 2250,
-    color: "#3b82f6",
-  },
-  {
-    via: "Driver",
-    start: 1600,
-    end: 10000,
-    color: "#f59e0b",
-  },
-  {
-    via: "Tweeter",
-    start: 6500,
-    end: 20000,
-    color: "#ec4899",
-  },
-];
+import { CrossoverSetting } from "@/types/audio";
 
 interface CrossoverChartProps {
   className?: string;
+  data?: CrossoverSetting[];
 }
 
-export function CrossoverChart({ className }: CrossoverChartProps) {
-  const chartData = crossoverData.map((item) => ({
-    via: item.via,
-    range: item.end - item.start,
-    start: item.start,
-    color: item.color,
-    label: `${item.start} Hz – ${item.end >= 1000 ? `${(item.end / 1000).toFixed(1)}k` : item.end} Hz`,
-  }));
+const colorMap: Record<string, string> = {
+  "subwoofer": "#a855f7",
+  "midrange": "#3b82f6",
+  "driver": "#f59e0b",
+  "tweeter": "#ec4899"
+};
+
+export function CrossoverChart({ className, data = [] }: CrossoverChartProps) {
+  if (!data || data.length === 0) {
+    return (
+      <div className={`flex items-center justify-center h-[220px] rounded-lg border border-dashed border-white/[0.1] ${className}`}>
+        <p className="text-sm text-gray-500">Adicione pelo menos um falante ao projeto para visualizar o gráfico de cortes.</p>
+      </div>
+    );
+  }
+
+  const chartData = data.map((item) => {
+    const start = item.hpf || 20;
+    const end = item.lpf || 20000;
+    const color = colorMap[item.equipmentType] || "#6b7280";
+    
+    return {
+      via: item.via,
+      range: Math.max(end - start, 10), // Ensure at least some width
+      start: start,
+      color: color,
+      label: `${start} Hz – ${end >= 1000 ? `${(end / 1000).toFixed(1)}k` : end} Hz`,
+    };
+  });
 
   return (
     <div className={className}>
