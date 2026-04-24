@@ -74,6 +74,12 @@ export interface Equipment {
   enclosureType?: string;
   volumeLiters?: number;
   tuningHz?: number;
+  widthCm?: number;
+  heightCm?: number;
+  depthCm?: number;
+  woodThicknessMm?: number;
+  speakerDisplacementLiters?: number;
+  portDisplacementLiters?: number;
 }
 
 export interface EquipmentPreset extends Partial<Equipment> {
