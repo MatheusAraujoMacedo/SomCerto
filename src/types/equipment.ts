@@ -56,4 +56,32 @@ export interface Equipment {
   coilConnection?: CoilConnection;
   finalImpedance?: number;
   impedanceLabel?: string;
+  // Multichannel Amplifiers fields
+  totalChannels?: number;
+  minImpedancePerChannel?: number;
+  minImpedanceBridge?: number;
+  bridgeSupported?: boolean;
+  powerPerChannel?: { impedance: number; wattsRms: number }[];
+  bridgePower?: { impedance: number; wattsRms: number }[];
+  // Processors
+  inputs?: number;
+  outputs?: number;
+  // Batteries & Power Supplies
+  maxCurrentAmps?: number;
+  voltage?: number;
+  capacityAh?: number;
+  // Enclosures
+  enclosureType?: string;
+  volumeLiters?: number;
+  tuningHz?: number;
+}
+
+export interface EquipmentPreset extends Partial<Equipment> {
+  id: string;
+  type: EquipmentType;
+  brand: string;
+  model: string;
+  name: string;
+  tags?: string[];
+  description?: string;
 }

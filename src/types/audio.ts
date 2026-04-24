@@ -1,3 +1,5 @@
+import { Equipment } from "./equipment";
+
 export type ConnectionMode = "series" | "parallel" | "individual";
 
 export type CompatibilityStatus = "compatible" | "attention" | "risk";
@@ -6,6 +8,23 @@ export interface CompatibilityResult {
   status: CompatibilityStatus;
   finalImpedance: number;
   estimatedPower: number;
+  messages: AlertMessage[];
+}
+
+export interface ChannelCompatibilityResult {
+  channelLabel: string;
+  connectedSpeakers: Equipment[];
+  finalImpedance: number;
+  minAllowedImpedance: number;
+  estimatedPower: number;
+  speakerRms: number;
+  status: CompatibilityStatus;
+  messages: AlertMessage[];
+}
+
+export interface MultiChannelCompatibilityResult {
+  status: CompatibilityStatus;
+  channelResults: ChannelCompatibilityResult[];
   messages: AlertMessage[];
 }
 
