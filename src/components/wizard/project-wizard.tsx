@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Equipment, EquipmentPreset, VoiceCoilType, CoilConnection } from "@/types/equipment";
 import { AudioProject } from "@/types/project";
-import { saveProject } from "@/lib/storage/projects-storage";
+import { saveProject, setActiveProject } from "@/lib/storage/projects-storage";
 import { searchEquipmentPresets } from "@/data/equipment-presets";
 import { v4 as uuidv4 } from "uuid";
 import { Search, CheckCircle2, ChevronRight, ChevronLeft, Plus, Check } from "lucide-react";
@@ -37,18 +37,20 @@ export interface WizardState {
 }
 
 const STEPS = [
-  "Dados Iniciais",
-  "O que tem?",
+  "Projeto",
+  "Sistema",
   "Equipamentos",
   "Ligações",
   "Análise",
-  "Cortes (X-Over)",
+  "Configuração",
   "Resumo",
 ];
 
 export function ProjectWizard() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [state, setState] = useState<WizardState>({
     projectName: "",
     vehicle: "",
@@ -77,28 +79,39 @@ export function ProjectWizard() {
     if (currentStep > 1) setCurrentStep((p) => p - 1);
   };
 
-  const handleSaveProject = () => {
-    // Generate valid AudioProject
-    const project: AudioProject = {
-      id: uuidv4(),
-      name: state.projectName || "Projeto sem nome",
-      vehicle: state.vehicle || "Não informado",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      equipments: state.equipments.map(eq => {
-          // If dual coil sub, apply the selected connection
-          if (eq.type === "subwoofer" && eq.voiceCoilType === "dual" && state.coilConnections[eq.id]) {
-              return {
-                  ...eq,
-                  coilConnection: state.coilConnections[eq.id]
-              };
-          }
-          return eq;
-      }),
-    };
+  const handleSaveProject = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    setErrorMessage(null);
 
-    saveProject(project);
-    router.push("/meu-projeto");
+    try {
+      const project: AudioProject = {
+        id: uuidv4(),
+        name: state.projectName || "Projeto sem nome",
+        vehicle: state.vehicle || "Não informado",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        equipments: state.equipments.map(eq => {
+            if (eq.type === "subwoofer" && eq.voiceCoilType === "dual" && state.coilConnections[eq.id]) {
+                return {
+                    ...eq,
+                    coilConnection: state.coilConnections[eq.id]
+                };
+            }
+            return eq;
+        }),
+      };
+
+      saveProject(project);
+      setActiveProject(project.id);
+      
+      router.push("/meu-projeto");
+    } catch (error) {
+      console.error("Erro ao salvar projeto guiado:", error);
+      setErrorMessage("Não foi possível salvar o projeto. Revise as informações e tente novamente.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -144,9 +157,12 @@ export function ProjectWizard() {
               Próximo <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
-            <Button onClick={handleSaveProject} className="bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/20">
-              <Check className="mr-2 h-4 w-4" /> Salvar Projeto
-            </Button>
+            <div className="flex flex-col items-end gap-2">
+              <Button disabled={isSaving} onClick={handleSaveProject} className="bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/20">
+                <Check className="mr-2 h-4 w-4" /> {isSaving ? "Salvando..." : "Salvar Projeto"}
+              </Button>
+              {errorMessage && <p className="text-xs text-red-400 max-w-xs">{errorMessage}</p>}
+            </div>
           )}
         </div>
       </div>
@@ -160,18 +176,18 @@ function Step1({ state, updateState }: { state: WizardState; updateState: (u: Pa
   return (
     <div className="space-y-6 animate-in slide-in-from-right-4 fade-in duration-300">
       <div className="space-y-2">
-        <h2 className="text-xl font-semibold text-white">Sobre o Projeto</h2>
-        <p className="text-sm text-gray-400">Vamos começar dando uma identidade ao seu som.</p>
+        <h2 className="text-xl font-semibold text-white">Informações do projeto</h2>
+        <p className="text-sm text-gray-400">Comece informando o nome do projeto, o veículo e o objetivo principal do sistema de som.</p>
       </div>
 
       <div className="space-y-4 max-w-lg">
         <div className="space-y-2">
-          <Label className="text-gray-300">Nome do Projeto</Label>
+          <Label className="text-gray-300">Nome do projeto</Label>
           <Input 
             value={state.projectName} 
             onChange={e => updateState({ projectName: e.target.value })} 
             className="border-white/[0.08] bg-white/[0.03] text-gray-200" 
-            placeholder="Ex: Celta Paredão" 
+            placeholder="Ex: Som do Versa" 
           />
         </div>
         <div className="space-y-2">
@@ -180,25 +196,26 @@ function Step1({ state, updateState }: { state: WizardState; updateState: (u: Pa
             value={state.vehicle} 
             onChange={e => updateState({ vehicle: e.target.value })} 
             className="border-white/[0.08] bg-white/[0.03] text-gray-200" 
-            placeholder="Ex: Chevrolet Celta 2012" 
+            placeholder="Ex: Nissan Versa SL 2016" 
           />
         </div>
         <div className="space-y-2">
-          <Label className="text-gray-300">Objetivo do Som</Label>
+          <Label className="text-gray-300">Objetivo do projeto</Label>
           <Select value={state.goal} onValueChange={(val) => val && updateState({ goal: val })}>
             <SelectTrigger className="border-white/[0.08] bg-white/[0.03] text-gray-200">
               <SelectValue placeholder="Selecione o objetivo" />
             </SelectTrigger>
             <SelectContent className="border-white/[0.08] bg-[#151B24]">
-              <SelectItem value="interno" className="text-gray-200">Som Interno Básico</SelectItem>
-              <SelectItem value="trio" className="text-gray-200">Trio Goiano / Básico</SelectItem>
-              <SelectItem value="4vias" className="text-gray-200">4 Vias Completo</SelectItem>
-              <SelectItem value="grave" className="text-gray-200">Foco em Grave Forte</SelectItem>
-              <SelectItem value="sq" className="text-gray-200">Qualidade de Áudio (SQ)</SelectItem>
-              <SelectItem value="bob" className="text-gray-200">Caixa BOB / Fonte</SelectItem>
+              <SelectItem value="interno" className="text-gray-200">Som interno</SelectItem>
+              <SelectItem value="trio" className="text-gray-200">Trio básico</SelectItem>
+              <SelectItem value="4vias" className="text-gray-200">Sistema 4 vias</SelectItem>
+              <SelectItem value="grave" className="text-gray-200">Grave forte</SelectItem>
+              <SelectItem value="sq" className="text-gray-200">Qualidade/SQ</SelectItem>
+              <SelectItem value="bob" className="text-gray-200">Tocar com fonte/tomada</SelectItem>
             </SelectContent>
           </Select>
         </div>
+        <p className="text-xs text-gray-500 pt-2">Essas informações ajudam o SomCerto a organizar as recomendações iniciais.</p>
       </div>
     </div>
   );
@@ -208,20 +225,21 @@ function Step2({ state, updateState }: { state: WizardState; updateState: (u: Pa
   const toggle = (key: keyof WizardState) => updateState({ [key]: !state[key] });
 
   const systems = [
-    { id: "hasSubwoofer", label: "Grave / Subwoofer" },
-    { id: "hasMidrange", label: "Médio Grave" },
-    { id: "hasDriver", label: "Cornetas / Drivers" },
-    { id: "hasTweeter", label: "Super Tweeters" },
-    { id: "hasProcessor", label: "Processador de Áudio" },
-    { id: "hasPowerSupply", label: "Fonte Automotiva" },
-    { id: "hasBattery", label: "Bateria Auxiliar" },
+    { id: "hasSubwoofer", label: "Subwoofer" },
+    { id: "hasMidrange", label: "Médio grave" },
+    { id: "hasDriver", label: "Driver" },
+    { id: "hasTweeter", label: "Super tweeter" },
+    { id: "hasProcessor", label: "Processador" },
+    { id: "hasPowerSupply", label: "Fonte" },
+    { id: "hasBattery", label: "Bateria auxiliar" },
+    { id: "hasEnclosure", label: "Caixa acústica" }
   ];
 
   return (
     <div className="space-y-6 animate-in slide-in-from-right-4 fade-in duration-300">
       <div className="space-y-2">
-        <h2 className="text-xl font-semibold text-white">Quais tipos de itens você terá?</h2>
-        <p className="text-sm text-gray-400">Marque apenas os componentes que farão parte do seu sistema.</p>
+        <h2 className="text-xl font-semibold text-white">Tipo de sistema</h2>
+        <p className="text-sm text-gray-400">Selecione quais partes fazem parte do seu projeto. Você pode alterar isso depois.</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -249,6 +267,7 @@ function Step2({ state, updateState }: { state: WizardState; updateState: (u: Pa
           );
         })}
       </div>
+      <p className="text-xs text-gray-500 pt-2">Marque apenas os itens que você pretende usar agora. Equipamentos futuros podem ser adicionados depois.</p>
     </div>
   );
 }
@@ -301,42 +320,51 @@ function Step3({ state, updateState }: { state: WizardState; updateState: (u: Pa
     return (
         <div className="space-y-6 animate-in slide-in-from-right-4 fade-in duration-300">
             <div className="space-y-2">
-                <h2 className="text-xl font-semibold text-white">Escolha os Equipamentos</h2>
-                <p className="text-sm text-gray-400">Busque e adicione módulos, falantes e bateria.</p>
+                <h2 className="text-xl font-semibold text-white">Equipamentos</h2>
+                <p className="text-sm text-gray-400">Adicione os equipamentos do projeto usando presets locais ou cadastro manual.</p>
             </div>
 
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <Input 
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Buscar equipamento. Ex: SD 800, Bicho Papão..." 
-                    className="pl-9 border-white/[0.08] bg-[#1A232E] text-white"
-                />
-                
-                {results.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-md border border-white/[0.1] bg-[#1A232E] p-1 shadow-xl">
-                    {results.map((preset) => (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => addEquipmentFromPreset(preset)}
-                        className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-cyan-500/10 hover:text-cyan-400 rounded-sm flex justify-between items-center"
-                      >
-                        <div>
-                            <span className="font-semibold block">{preset.name}</span>
-                        </div>
-                        <Plus className="h-4 w-4" />
-                      </button>
-                    ))}
-                  </div>
-                )}
+            <div className="relative space-y-2">
+                <Label className="text-sm font-semibold text-gray-300">Buscar equipamento conhecido</Label>
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <Input 
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Ex: SD 800, Bicho Papão..." 
+                        className="pl-9 border-white/[0.08] bg-[#1A232E] text-white"
+                    />
+                    
+                    {results.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-md border border-white/[0.1] bg-[#1A232E] p-1 shadow-xl">
+                        {results.map((preset) => (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            onClick={() => addEquipmentFromPreset(preset)}
+                            className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-cyan-500/10 hover:text-cyan-400 rounded-sm flex justify-between items-center"
+                          >
+                            <div>
+                                <span className="font-semibold block">{preset.name}</span>
+                            </div>
+                            <Button variant="ghost" size="sm" className="h-6 text-xs text-cyan-400 hover:text-cyan-300 p-0 ml-4">
+                                <Plus className="h-3 w-3 mr-1" /> Usar este modelo
+                            </Button>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                </div>
+                <p className="text-xs text-gray-500 italic mt-1">Os dados dos presets são uma base inicial. Confira as especificações oficiais antes da instalação.</p>
             </div>
 
-            <div className="space-y-3">
-                <h3 className="font-semibold text-gray-300">Lista Atual ({state.equipments.length})</h3>
+            <div className="space-y-3 pt-4 border-t border-white/[0.06]">
+                <h3 className="font-semibold text-gray-300">Equipamentos selecionados ({state.equipments.length})</h3>
                 {state.equipments.length === 0 && (
-                    <p className="text-sm text-gray-500 italic">Nenhum item adicionado ainda.</p>
+                    <div className="p-6 border border-white/[0.08] border-dashed rounded-xl text-center">
+                        <p className="text-sm text-gray-400">Nenhum equipamento adicionado ainda.</p>
+                        <p className="text-xs text-gray-500 mt-1">Busque um modelo conhecido ou cadastre manualmente para continuar.</p>
+                    </div>
                 )}
                 <div className="grid gap-2">
                     {state.equipments.map(eq => (
@@ -363,14 +391,13 @@ function Step4({ state, updateState }: { state: WizardState; updateState: (u: Pa
     return (
         <div className="space-y-6 animate-in slide-in-from-right-4 fade-in duration-300">
             <div className="space-y-2">
-                <h2 className="text-xl font-semibold text-white">Ligações Básicas</h2>
-                <p className="text-sm text-gray-400">Defina como vai ligar as bobinas dos seus falantes.</p>
+                <h2 className="text-xl font-semibold text-white">Ligações</h2>
+                <p className="text-sm text-gray-400">Informe como os principais equipamentos serão ligados. Se ainda não souber, você pode definir depois.</p>
             </div>
 
             {dualCoilSubs.length === 0 && (
-                <div className="p-6 border border-white/[0.08] rounded-xl text-center">
-                    <p className="text-gray-400">Nenhum subwoofer de bobina dupla detectado.</p>
-                    <p className="text-sm text-gray-500 mt-1">Pode avançar tranquilo, sem necessidades de ligações de bobina manuais!</p>
+                <div className="p-6 border border-white/[0.08] border-dashed rounded-xl text-center">
+                    <p className="text-sm text-gray-400">As ligações ainda não foram definidas. Você pode completar essa etapa depois.</p>
                 </div>
             )}
 
@@ -378,7 +405,7 @@ function Step4({ state, updateState }: { state: WizardState; updateState: (u: Pa
                 <div key={sub.id} className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06] space-y-3">
                     <div>
                         <p className="font-semibold text-gray-200">{sub.name}</p>
-                        <p className="text-xs text-gray-500">Bobina Dupla ({sub.impedancePerCoil}+{sub.impedancePerCoil} ohms)</p>
+                        <p className="text-xs text-gray-500">Bobina dupla ({sub.impedancePerCoil}+{sub.impedancePerCoil} ohms)</p>
                     </div>
                     <Select 
                         value={state.coilConnections[sub.id] || "parallel"} 
@@ -388,12 +415,13 @@ function Step4({ state, updateState }: { state: WizardState; updateState: (u: Pa
                             <SelectValue placeholder="Como ligar a bobina?" />
                         </SelectTrigger>
                         <SelectContent className="border-white/[0.08] bg-[#151B24]">
-                            <SelectItem value="parallel" className="text-gray-200">Paralelo (Cai pela metade)</SelectItem>
-                            <SelectItem value="series" className="text-gray-200">Série (Dobra a resistência)</SelectItem>
+                            <SelectItem value="parallel" className="text-gray-200">Ligação em paralelo (Reduz a impedância)</SelectItem>
+                            <SelectItem value="series" className="text-gray-200">Ligação em série (Aumenta a impedância)</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
             ))}
+            <p className="text-xs text-gray-500 pt-2">Em subwoofers de bobina dupla, ligação em paralelo reduz a impedância final; ligação em série aumenta.</p>
         </div>
     );
 }
@@ -417,26 +445,34 @@ function Step5({ state }: { state: WizardState }) {
     return (
         <div className="space-y-6 animate-in slide-in-from-right-4 fade-in duration-300">
              <div className="space-y-2">
-                <h2 className="text-xl font-semibold text-white">Análise do Sistema</h2>
-                <p className="text-sm text-gray-400">Verificamos as opções que você selecionou e eis o que encontramos.</p>
+                <h2 className="text-xl font-semibold text-white">Análise inicial</h2>
+                <p className="text-sm text-gray-400">Com base nas informações preenchidas, o SomCerto verifica possíveis alertas de compatibilidade.</p>
             </div>
 
-            <StatusCard 
-                title="Avaliação Teórica"
-                status={sysStatus}
-                description={sysStatus === "ok" ? "Montagem parece totalmente verde!" : sysStatus === "attention" ? "Exigem algumas checagens antes de tocar." : "Alguns módulos e falantes entram em conflito. Cuidado!"}
-            />
+            {state.equipments.length === 0 ? (
+                <div className="p-4 text-center border border-white/[0.08] rounded-lg">
+                    <p className="text-sm text-gray-400">Algumas informações técnicas ainda não foram preenchidas. O projeto pode ser salvo, mas a análise ficará limitada.</p>
+                </div>
+            ) : (
+                <>
+                    <StatusCard 
+                        title="Análise inicial"
+                        status={sysStatus}
+                        description={sysStatus === "ok" ? "Nenhum alerta crítico encontrado até agora." : sysStatus === "attention" ? "Alguns dados ainda estão incompletos. Você poderá revisar depois." : "Verifique a impedância final antes de ligar o sistema."}
+                    />
 
-            <div className="space-y-3 mt-4">
-                {alerts.length === 0 && (
-                    <div className="p-4 text-center border-emerald-500/20 bg-emerald-500/10 rounded-lg">
-                        <p className="text-emerald-400 font-medium">Tudo perfeito. Sem gargalos detectados na impedância nominal cruzada do painel!</p>
+                    <div className="space-y-3 mt-4">
+                        {alerts.length === 0 && (
+                            <div className="p-4 text-center border-emerald-500/20 bg-emerald-500/10 rounded-lg">
+                                <p className="text-emerald-400 text-sm font-medium">Nenhum alerta crítico encontrado.</p>
+                            </div>
+                        )}
+                        {alerts.map(a => (
+                            <AlertCard key={a.id} type={a.type} title={a.title} description={a.description} />
+                        ))}
                     </div>
-                )}
-                {alerts.map(a => (
-                    <AlertCard key={a.id} type={a.type} title={a.title} description={a.description} />
-                ))}
-            </div>
+                </>
+            )}
         </div>
     );
 }
@@ -447,15 +483,21 @@ function Step6({ state }: { state: WizardState }) {
     return (
         <div className="space-y-6 animate-in slide-in-from-right-4 fade-in duration-300">
             <div className="space-y-2">
-                <h2 className="text-xl font-semibold text-white">Dicas de Cortes (X-Over)</h2>
-                <p className="text-sm text-gray-400">Sugestões iniciais seguras baseado nas vias do seu projeto.</p>
+                <h2 className="text-xl font-semibold text-white">Configuração sugerida</h2>
+                <p className="text-sm text-gray-400">Veja sugestões iniciais de cortes para cada via do sistema.</p>
             </div>
 
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
                 <p className="text-xs text-amber-500">
-                    Aviso: Esses valores são pontos de partida teóricos e NÃO substituem equipamento de RTA e ajuste profissional!
+                    Esses valores são pontos de partida e não substituem ajuste profissional com medição.
                 </p>
             </div>
+
+            {state.equipments.length === 0 && (
+                <div className="p-4 text-center border border-white/[0.08] rounded-lg">
+                    <p className="text-sm text-gray-400">Adicione equipamentos ao projeto para gerar sugestões de configuração.</p>
+                </div>
+            )}
 
             <div className="grid gap-3 sm:grid-cols-2">
                 {suggestions.map((sug) => {
@@ -482,35 +524,39 @@ function Step7({ state }: { state: WizardState }) {
     return (
         <div className="space-y-6 animate-in slide-in-from-right-4 fade-in duration-300">
             <div className="space-y-2">
-                <h2 className="text-xl font-semibold text-white">Resumo e Finalização</h2>
-                <p className="text-sm text-gray-400">Dê uma olhada de alto nível antes de salvar no seu app.</p>
+                <h2 className="text-xl font-semibold text-white">Resumo final</h2>
+                <p className="text-sm text-gray-400">Revise as informações antes de salvar o projeto.</p>
             </div>
 
             <div className="p-5 rounded-xl border border-white/[0.06] bg-white/[0.02] space-y-4">
                 <div>
-                    <p className="text-xs text-gray-500">NOME DO PROJETO</p>
+                    <h3 className="text-xs text-gray-500 uppercase tracking-wider">Nome do projeto</h3>
                     <p className="font-semibold text-lg text-white">{state.projectName || "Sem nome"}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <p className="text-xs text-gray-500">VEÍCULO</p>
+                        <h3 className="text-xs text-gray-500 uppercase tracking-wider">Veículo</h3>
                         <p className="text-sm text-gray-300">{state.vehicle || "Não informado"}</p>
                     </div>
                     <div>
-                        <p className="text-xs text-gray-500">BÚSSOLA</p>
-                        <p className="text-sm text-gray-300 uppercase">{state.goal || "Geral"}</p>
+                        <h3 className="text-xs text-gray-500 uppercase tracking-wider">Objetivo do projeto</h3>
+                        <p className="text-sm text-gray-300">{state.goal === "sq" ? "Qualidade/SQ" : state.goal === "grave" ? "Grave forte" : state.goal ? state.goal : "Geração geral"}</p>
                     </div>
                 </div>
             </div>
 
             <div className="p-5 rounded-xl border border-white/[0.06] bg-white/[0.02] space-y-3">
-                <p className="text-xs text-gray-500">ITENS NA SACÓLA</p>
-                {state.equipments.map(e => (
-                    <div key={e.id} className="flex justify-between items-center bg-black/20 p-2 rounded">
-                        <span className="text-sm font-medium text-gray-200">{e.name}</span>
-                        <span className="text-xs text-gray-500">{e.type}</span>
-                    </div>
-                ))}
+                <h3 className="text-xs text-gray-500 uppercase tracking-wider border-b border-white/[0.06] pb-2">Equipamentos selecionados</h3>
+                {state.equipments.length === 0 ? (
+                    <p className="text-sm text-gray-400">Nenhum equipamento adicionado ainda.</p>
+                ) : (
+                    state.equipments.map(e => (
+                        <div key={e.id} className="flex justify-between items-center bg-black/20 p-2 rounded">
+                            <span className="text-sm font-medium text-gray-200">{e.name}</span>
+                            <span className="text-xs text-gray-500">{e.type}</span>
+                        </div>
+                    ))
+                )}
             </div>
         </div>
     );
