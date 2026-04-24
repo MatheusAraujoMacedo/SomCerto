@@ -397,7 +397,7 @@ function Step4({ state, updateState }: { state: WizardState; updateState: (u: Pa
 
             {dualCoilSubs.length === 0 && (
                 <div className="p-6 border border-white/[0.08] border-dashed rounded-xl text-center">
-                    <p className="text-sm text-gray-400">As ligações ainda não foram definidas. Você pode completar essa etapa depois.</p>
+                    <p className="text-sm text-gray-400">Nenhum ajuste de bobina dupla é necessário nesta etapa.</p>
                 </div>
             )}
 
@@ -464,7 +464,7 @@ function Step5({ state }: { state: WizardState }) {
                     <div className="space-y-3 mt-4">
                         {alerts.length === 0 && (
                             <div className="p-4 text-center border-emerald-500/20 bg-emerald-500/10 rounded-lg">
-                                <p className="text-emerald-400 text-sm font-medium">Nenhum alerta crítico encontrado.</p>
+                                <p className="text-emerald-400 text-sm font-medium">Nenhum alerta crítico encontrado até agora.</p>
                             </div>
                         )}
                         {alerts.map(a => (
