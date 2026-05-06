@@ -2,6 +2,7 @@
 -- SOMCERTO - SCHEMA INICIAL: CATÁLOGO
 -- ==========================================
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 -- Função para atualizar updated_at automaticamente
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -171,63 +172,63 @@ BEGIN
 
     -- Bomber Bicho Papão 12 800W 4+4
     INSERT INTO equipment_models (
-        brand_id, type, name, slug, rms_power, diameter_inches, voice_coil_type, impedance_per_coil, notes, data_quality
+        brand_id, type, name, slug, rms_power, diameter_inches, voice_coil_type, impedance_per_coil, impedance_label, notes, data_quality
     ) VALUES (
-        v_bomber_id, 'subwoofer', 'Bicho Papão 12 800W', 'bomber-bicho-papao-12-800w-4-4', 800, 12, 'dual', 4, 'Verificar especificações oficiais antes da instalação.', 'unverified'
+        v_bomber_id, 'subwoofer', 'Bicho Papão 12 800W', 'bomber-bicho-papao-12-800w-4-4', 800, 12, 'dual', 4, '4+4 ohms', 'Verificar especificações oficiais antes da instalação.', 'unverified'
     );
 
     -- Bomber Bicho Papão 12 600W 4 ohms
     INSERT INTO equipment_models (
-        brand_id, type, name, slug, rms_power, diameter_inches, voice_coil_type, final_impedance, notes, data_quality
+        brand_id, type, name, slug, rms_power, diameter_inches, voice_coil_type, impedance, impedance_label, final_impedance, notes, data_quality
     ) VALUES (
-        v_bomber_id, 'subwoofer', 'Bicho Papão 12 600W', 'bomber-bicho-papao-12-600w-4-ohms', 600, 12, 'single', 4, 'Verificar especificações oficiais antes da instalação.', 'unverified'
+        v_bomber_id, 'subwoofer', 'Bicho Papão 12 600W', 'bomber-bicho-papao-12-600w-4-ohms', 600, 12, 'single', 4, '4 ohms', 4, 'Verificar especificações oficiais antes da instalação.', 'unverified'
     );
 
     -- Bomber Copper Ring 8 500W 8 ohms
     INSERT INTO equipment_models (
-        brand_id, type, name, slug, rms_power, diameter_inches, voice_coil_type, final_impedance, notes, data_quality
+        brand_id, type, name, slug, rms_power, diameter_inches, voice_coil_type, impedance, impedance_label, final_impedance, notes, data_quality
     ) VALUES (
-        v_bomber_id, 'midrange', 'Copper Ring 8 500W', 'bomber-copper-ring-8-500w-8-ohms', 500, 8, 'single', 8, 'Verificar especificações oficiais antes da instalação.', 'unverified'
+        v_bomber_id, 'midrange', 'Copper Ring 8 500W', 'bomber-copper-ring-8-500w-8-ohms', 500, 8, 'single', 8, '8 ohms', 8, 'Verificar especificações oficiais antes da instalação.', 'unverified'
     );
 
     -- JBL Selenium D200X 110W 8 ohms
     INSERT INTO equipment_models (
-        brand_id, type, name, slug, rms_power, final_impedance, notes, data_quality
+        brand_id, type, name, slug, rms_power, voice_coil_type, impedance, impedance_label, final_impedance, notes, data_quality
     ) VALUES (
-        v_jbl_id, 'driver', 'D200X 110W', 'jbl-selenium-d200x-110w-8-ohms', 110, 8, 'Verificar especificações oficiais antes da instalação.', 'unverified'
+        v_jbl_id, 'driver', 'D200X 110W', 'jbl-selenium-d200x-110w-8-ohms', 110, 'single', 8, '8 ohms', 8, 'Verificar especificações oficiais antes da instalação.', 'unverified'
     );
 
     -- JBL Selenium D250X
     INSERT INTO equipment_models (
-        brand_id, type, name, slug, rms_power, final_impedance, notes, data_quality
+        brand_id, type, name, slug, rms_power, voice_coil_type, impedance, impedance_label, final_impedance, notes, data_quality
     ) VALUES (
-        v_jbl_id, 'driver', 'D250X 100W', 'jbl-selenium-d250x-100w-8-ohms', 100, 8, 'Verificar especificações oficiais antes da instalação.', 'unverified'
+        v_jbl_id, 'driver', 'D250X 100W', 'jbl-selenium-d250x-100w-8-ohms', 100, 'single', 8, '8 ohms', 8, 'Verificar especificações oficiais antes da instalação.', 'unverified'
     );
 
     -- Soundigital SD 800.4 EVO 6
     INSERT INTO equipment_models (
-        brand_id, type, name, slug, rms_power, total_channels, min_impedance_per_channel, min_impedance_bridge, bridge_supported, notes, data_quality
+        brand_id, type, name, slug, max_power, total_channels, min_impedance_per_channel, min_impedance_bridge, bridge_supported, notes, data_quality
     ) VALUES (
         v_soundigital_id, 'amplifier', 'SD 800.4 EVO 6', 'soundigital-sd-800-4-evo-6', 800, 4, 2, 4, true, 'Verificar especificações oficiais antes da instalação.', 'unverified'
     );
 
     -- Soundigital SD 1200.1 EVO 6 4 ohms
     INSERT INTO equipment_models (
-        brand_id, type, name, slug, rms_power, total_channels, min_impedance, notes, data_quality
+        brand_id, type, name, slug, max_power, total_channels, min_impedance, notes, data_quality
     ) VALUES (
         v_soundigital_id, 'amplifier', 'SD 1200.1 EVO 6', 'soundigital-sd-1200-1-evo-6-4-ohms', 1200, 1, 4, 'Verificar especificações oficiais antes da instalação.', 'unverified'
     );
 
     -- Taramps MD 1200.1 4 ohms
     INSERT INTO equipment_models (
-        brand_id, type, name, slug, rms_power, total_channels, min_impedance, notes, data_quality
+        brand_id, type, name, slug, max_power, total_channels, min_impedance, notes, data_quality
     ) VALUES (
         v_taramps_id, 'amplifier', 'MD 1200.1', 'taramps-md-1200-1-4-ohms', 1200, 1, 4, 'Verificar especificações oficiais antes da instalação.', 'unverified'
     );
 
     -- Taramps TS 800x4
     INSERT INTO equipment_models (
-        brand_id, type, name, slug, rms_power, total_channels, min_impedance_per_channel, min_impedance_bridge, bridge_supported, notes, data_quality
+        brand_id, type, name, slug, max_power, total_channels, min_impedance_per_channel, min_impedance_bridge, bridge_supported, notes, data_quality
     ) VALUES (
         v_taramps_id, 'amplifier', 'TS 800x4', 'taramps-ts-800x4', 800, 4, 2, 4, true, 'Verificar especificações oficiais antes da instalação.', 'unverified'
     );
